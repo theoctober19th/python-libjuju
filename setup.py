@@ -40,6 +40,7 @@ setup(
             "pytest",
             "pytest-asyncio",
             "Twine",
+            "freezegun",
         ]
     },
     include_package_data=True,

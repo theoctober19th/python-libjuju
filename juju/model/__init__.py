@@ -1,10 +1,12 @@
 # Copyright 2023 Canonical Ltd.
 # Licensed under the Apache V2, see LICENCE file for details.
+"""Represent Juju Model, as in the workspace into which applications are deployed."""
+
 from __future__ import annotations
 
 import asyncio
 import base64
-import collections
+import collections.abc
 import hashlib
 import json
 import logging
@@ -13,6 +15,7 @@ import re
 import stat
 import sys
 import tempfile
+import time
 import warnings
 import weakref
 import zipfile
@@ -20,23 +23,26 @@ from concurrent.futures import CancelledError
 from datetime import datetime, timedelta
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, Mapping, overload
+from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping, overload
 
 import websockets
 import yaml
 from typing_extensions import deprecated
 
-from . import provisioner, tag, utils
-from .annotationhelper import _get_annotations, _set_annotations
-from .bundle import BundleHandler, get_charm_series, is_local_charm
-from .charmhub import CharmHub
-from .client import client, connection, connector
-from .client.overrides import Caveat, Macaroon
-from .constraints import parse as parse_constraints
-from .constraints import parse_storage_constraints
-from .controller import ConnectedController, Controller
-from .delta import get_entity_class, get_entity_delta
-from .errors import (
+from .. import provisioner, tag, utils
+from ..annotationhelper import _get_annotations, _set_annotations
+from ..bundle import BundleHandler, get_charm_series, is_local_charm
+from ..charmhub import CharmHub
+from ..client import client, connection, connector
+from ..client._definitions import ApplicationStatus as ApplicationStatus
+from ..client._definitions import MachineStatus as MachineStatus
+from ..client._definitions import UnitStatus as UnitStatus
+from ..client.overrides import Caveat, Macaroon
+from ..constraints import parse as parse_constraints
+from ..constraints import parse_storage_constraints
+from ..controller import ConnectedController, Controller
+from ..delta import get_entity_class, get_entity_delta
+from ..errors import (
     JujuAgentError,
     JujuAPIError,
     JujuAppError,
@@ -49,27 +55,37 @@ from .errors import (
     JujuUnitError,
     PylibjujuError,
 )
-from .exceptions import DeadEntityException
-from .names import is_valid_application
-from .offerendpoints import ParseError as OfferParseError
-from .offerendpoints import parse_local_endpoint, parse_offer_url
-from .origin import Channel, Source
-from .placement import parse as parse_placement
-from .secrets import create_secret_data, read_secret_data
-from .tag import application as application_tag
-from .url import URL, Schema
-from .version import DEFAULT_ARCHITECTURE
+from ..exceptions import DeadEntityException
+from ..names import is_valid_application
+from ..offerendpoints import ParseError as OfferParseError
+from ..offerendpoints import parse_local_endpoint, parse_offer_url
+from ..origin import Channel, Source
+from ..placement import parse as parse_placement
+from ..secrets import create_secret_data, read_secret_data
+from ..tag import application as application_tag
+from ..url import URL, Schema
+from ..version import DEFAULT_ARCHITECTURE
+from . import _idle
 
 if TYPE_CHECKING:
-    from .application import Application
-    from .client._definitions import FullStatus
-    from .constraints import StorageConstraintDict
-    from .machine import Machine
-    from .relation import Relation
-    from .remoteapplication import ApplicationOffer, RemoteApplication
-    from .unit import Unit
+    from ..application import Application
+    from ..client._definitions import FullStatus
+    from ..constraints import StorageConstraintDict
+    from ..machine import Machine
+    from ..relation import Relation
+    from ..remoteapplication import ApplicationOffer, RemoteApplication
+    from ..unit import Unit
 
-log = logging.getLogger(__name__)
+log = logger = logging.getLogger(__name__)
+
+
+def use_new_wait_for_idle() -> bool:
+    val = os.getenv("JUJU_NEW_WAIT_FOR_IDLE")
+    if not val:
+        return False
+    if val.isdigit():
+        return bool(int(val))
+    return val.title() != "False"
 
 
 class _Observer:
@@ -632,9 +648,9 @@ class Model:
 
     def __init__(
         self,
-        max_frame_size=None,
-        bakery_client=None,
-        jujudata=None,
+        max_frame_size: int | None = None,
+        bakery_client: Any = None,
+        jujudata: Any = None,
     ):
         """Instantiate a new Model.
 
@@ -2664,14 +2680,21 @@ class Model:
             results[tag.untag("action-", a.action.tag)] = a.status
         return results
 
-    async def get_status(self, filters=None, utc=False) -> FullStatus:
+    async def get_status(self, filters=None, utc: bool = False) -> FullStatus:
         """Return the status of the model.
 
         :param str filters: Optional list of applications, units, or machines
             to include, which can use wildcards ('*').
-        :param bool utc: Display time as UTC in RFC3339 format
+        :param bool utc: Deprecated, display time as UTC in RFC3339 format
 
         """
+        if utc:
+            warnings.warn(
+                "Model.get_status() utc= parameter is deprecated",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
         client_facade = client.ClientFacade.from_connection(self.connection())
         return await client_facade.FullStatus(patterns=filters)
 
@@ -2998,7 +3021,7 @@ class Model:
 
     async def wait_for_idle(
         self,
-        apps: list[str] | None = None,
+        apps: Iterable[str] | None = None,
         raise_on_error: bool = True,
         raise_on_blocked: bool = False,
         wait_for_active: bool = False,
@@ -3011,7 +3034,7 @@ class Model:
     ) -> None:
         """Wait for applications in the model to settle into an idle state.
 
-        :param List[str] apps: Optional list of specific app names to wait on.
+        :param Iterable[str]|None apps: Optional list of specific app names to wait on.
             If given, all apps must be present in the model and idle, while other
             apps in the model can still be busy. If not given, all apps currently
             in the model must be idle.
@@ -3037,6 +3060,7 @@ class Model:
             units of all apps need to be `idle`. This delay is used to ensure that
             any pending hooks have a chance to start to avoid false positives.
             The default is 15 seconds.
+            Exact behaviour is undefined for very small values and 0.
 
         :param float check_freq: How frequently, in seconds, to check the model.
             The default is every half-second.
@@ -3053,6 +3077,21 @@ class Model:
             going into the idle state. (e.g. useful for scaling down).
             When set, takes precedence over the `wait_for_units` parameter.
         """
+        if use_new_wait_for_idle():
+            await self.new_wait_for_idle(
+                apps=apps,
+                raise_on_error=raise_on_error,
+                raise_on_blocked=raise_on_blocked,
+                wait_for_active=wait_for_active,
+                timeout=timeout,
+                idle_period=idle_period,
+                check_freq=check_freq,
+                status=status,
+                wait_for_at_least_units=wait_for_at_least_units,
+                wait_for_exact_units=wait_for_exact_units,
+            )
+            return
+
         if wait_for_active:
             warnings.warn(
                 "wait_for_active is deprecated; use status",
@@ -3065,16 +3104,18 @@ class Model:
             wait_for_at_least_units if wait_for_at_least_units is not None else 1
         )
 
-        timeout = timedelta(seconds=timeout) if timeout is not None else None
-        idle_period = timedelta(seconds=idle_period)
+        timeout_ = timedelta(seconds=timeout) if timeout is not None else None
+        idle_period_ = timedelta(seconds=idle_period)
         start_time = datetime.now()
-        # Type check against the common error of passing a str for apps
-        if apps is not None and (
-            not isinstance(apps, list) or any(not isinstance(o, str) for o in apps)
-        ):
-            raise JujuError(f"Expected a List[str] for apps, given {apps}")
 
-        apps = apps or self.applications
+        if isinstance(apps, (str, bytes, bytearray, memoryview)):
+            raise TypeError(f"apps must be a Iterable[str], got {apps=}")
+
+        apps_ = list(apps or self.applications)
+
+        if any(not isinstance(o, str) for o in apps_):
+            raise TypeError(f"apps must be a Iterable[str], got {apps_=}")
+
         idle_times: dict[str, datetime] = {}
         units_ready: set[str] = set()  # The units that are in the desired state
         last_log_time: datetime | None = None
@@ -3110,10 +3151,10 @@ class Model:
             # The list 'busy' is what keeps this loop going,
             # i.e. it'll stop when busy is empty after all the
             # units are scanned
-            busy = []
-            errors = {}
-            blocks = {}
-            for app_name in apps:
+            busy: list[str] = []
+            errors: dict[str, list[str]] = {}
+            blocks: dict[str, list[str]] = {}
+            for app_name in apps_:
                 if app_name not in self.applications:
                     busy.append(app_name + " (missing)")
                     continue
@@ -3192,7 +3233,7 @@ class Model:
                         now = datetime.now()
                         idle_start = idle_times.setdefault(unit.name, now)
 
-                        if now - idle_start < idle_period:
+                        if now - idle_start < idle_period_:
                             busy.append(
                                 f"{unit.name} [{unit.agent_status}] {unit.workload_status}: {unit.workload_status_message}"
                             )
@@ -3205,12 +3246,82 @@ class Model:
             _raise_for_status(blocks, "blocked")
             if not busy:
                 break
-            busy = "\n  ".join(busy)
-            if timeout is not None and datetime.now() - start_time > timeout:
-                raise asyncio.TimeoutError("Timed out waiting for model:\n" + busy)
+            if timeout_ is not None and datetime.now() - start_time > timeout_:
+                raise asyncio.TimeoutError(
+                    "\n  ".join(["Timed out waiting for model:", *busy])
+                )
             if last_log_time is None or datetime.now() - last_log_time > log_interval:
-                log.info("Waiting for model:\n  " + busy)
+                log.info("\n  ".join(["Waiting for model:", *busy]))
                 last_log_time = datetime.now()
+            await asyncio.sleep(check_freq)
+
+    async def new_wait_for_idle(
+        self,
+        apps: Iterable[str] | None = None,
+        raise_on_error: bool = True,
+        raise_on_blocked: bool = False,
+        wait_for_active: bool = False,
+        timeout: float | None = 10 * 60,
+        idle_period: float = 15,
+        check_freq: float = 0.5,
+        status: str | None = None,
+        wait_for_at_least_units: int | None = None,
+        wait_for_exact_units: int | None = None,
+    ) -> None:
+        """Wait for applications in the model to settle into an idle state.
+
+        arguments match those of .wait_for_idle exactly.
+        """
+        if not isinstance(wait_for_exact_units, (int, type(None))):
+            raise ValueError(f"Must be an int or None, got {wait_for_exact_units=}")
+
+        if isinstance(wait_for_exact_units, int) and wait_for_exact_units < 0:
+            raise ValueError(f"Must be >=0, got {wait_for_exact_units=}")
+
+        if wait_for_active:
+            warnings.warn(
+                "wait_for_active is deprecated; use status",
+                DeprecationWarning,
+                stacklevel=3,
+            )
+            status = "active"
+
+        wait_for_units = (
+            wait_for_at_least_units if wait_for_at_least_units is not None else 1
+        )
+
+        if isinstance(apps, (str, bytes, bytearray, memoryview)):
+            raise TypeError(f"apps must be a Iterable[str], got {apps=}")
+
+        apps = frozenset(apps or self.applications)
+
+        if any(not isinstance(o, str) for o in apps):
+            raise TypeError(f"apps must be a Iterable[str], got {apps=}")
+
+        deadline = None if timeout is None else time.monotonic() + timeout
+
+        async def status_on_demand():
+            yield _idle.check(
+                await self.get_status(),
+                apps=apps,
+                raise_on_error=raise_on_error,
+                raise_on_blocked=raise_on_blocked,
+                status=status,
+            )
+
+        async for done in _idle.loop(
+            status_on_demand(),
+            apps=apps,
+            wait_for_exact_units=wait_for_exact_units,
+            wait_for_units=wait_for_units,
+            idle_period=idle_period,
+        ):
+            if done:
+                break
+
+            if deadline and time.monotonic() > deadline:
+                raise asyncio.TimeoutError(f"Timed out after {timeout}s")
+
             await asyncio.sleep(check_freq)
 
 

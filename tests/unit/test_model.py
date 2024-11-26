@@ -11,7 +11,7 @@ import pytest
 
 from juju.application import Application
 from juju.client.jujudata import FileJujuData
-from juju.errors import JujuConnectionError, JujuError
+from juju.errors import JujuConnectionError
 from juju.model import Model
 
 
@@ -251,19 +251,19 @@ class TestModelWaitForIdle(unittest.IsolatedAsyncioTestCase):
             # no apps so should return right away
             await m.wait_for_idle(wait_for_active=True)
 
-    async def test_apps_no_lst(self):
+    async def test_apps_type(self):
         m = Model()
-        with self.assertRaises(JujuError):
+        with self.assertRaises(TypeError):
             # apps arg has to be a List[str]
             await m.wait_for_idle(apps="should-be-list")
 
-        with self.assertRaises(JujuError):
+        with self.assertRaises(TypeError):
             # apps arg has to be a List[str]
-            await m.wait_for_idle(apps=3)
+            await m.wait_for_idle(apps=3)  # type: ignore
 
-        with self.assertRaises(JujuError):
+        with self.assertRaises(TypeError):
             # apps arg has to be a List[str]
-            await m.wait_for_idle(apps=[3])
+            await m.wait_for_idle(apps=[3])  # type: ignore
 
     async def test_timeout(self):
         m = Model()
@@ -271,7 +271,8 @@ class TestModelWaitForIdle(unittest.IsolatedAsyncioTestCase):
             # no apps so should timeout after timeout period
             await m.wait_for_idle(apps=["nonexisting_app"])
         self.assertEqual(
-            str(cm.exception), "Timed out waiting for model:\nnonexisting_app (missing)"
+            str(cm.exception),
+            "Timed out waiting for model:\n  nonexisting_app (missing)",
         )
 
     @pytest.mark.wait_for_idle
