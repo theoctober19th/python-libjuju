@@ -2,11 +2,9 @@
 # Licensed under the Apache V2, see LICENCE file for details.
 from __future__ import annotations
 
-import pytest
 from freezegun import freeze_time
 
 from juju.model._idle import CheckStatus, loop
-
 
 # Missing tests
 #
@@ -18,13 +16,15 @@ from juju.model._idle import CheckStatus, loop
 # FIXME expected idle 1s below
 # FIXME idle period 1
 # FIXME sending status=None, meaning some apps are still missing
-#
-@pytest.mark.xfail(reason="FIXME I misunderstood what 'idle' means")
+
+
 async def test_at_least_units():
     async def checks():
-        yield CheckStatus({"u/0", "u/1", "u/2"}, {"u/0"}, set())
-        yield CheckStatus({"u/0", "u/1", "u/2"}, {"u/0", "u/1"}, set())
-        yield CheckStatus({"u/0", "u/1", "u/2"}, {"u/0", "u/1", "u/2"}, set())
+        yield CheckStatus({"u/0", "u/1", "u/2"}, {"u/0"}, {"u/0", "u/1", "u/2"})
+        yield CheckStatus({"u/0", "u/1", "u/2"}, {"u/0", "u/1"}, {"u/0", "u/1", "u/2"})
+        yield CheckStatus(
+            {"u/0", "u/1", "u/2"}, {"u/0", "u/1", "u/2"}, {"u/0", "u/1", "u/2"}
+        )
 
     with freeze_time():
         assert [
@@ -36,6 +36,41 @@ async def test_at_least_units():
                 idle_period=0,
             )
         ] == [False, True, True]
+
+
+async def test_for_exact_units():
+    good = CheckStatus(
+        {"u/0", "u/1", "u/2"},
+        {"u/1", "u/2"},
+        {"u/0", "u/1", "u/2"},
+    )
+    too_few = CheckStatus(
+        {"u/0", "u/1", "u/2"},
+        {"u/2"},
+        {"u/0", "u/1", "u/2"},
+    )
+    too_many = CheckStatus(
+        {"u/0", "u/1", "u/2"},
+        {"u/1", "u/2", "u/0"},
+        {"u/0", "u/1", "u/2"},
+    )
+
+    async def checks():
+        yield too_few
+        yield good
+        yield too_many
+        yield good
+
+    assert [
+        v
+        async for v in loop(
+            checks(),
+            apps=frozenset(["u"]),
+            wait_for_units=1,
+            wait_for_exact_units=2,
+            idle_period=0,
+        )
+    ] == [False, True, False, True]
 
 
 async def test_ping_pong():

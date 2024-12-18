@@ -80,7 +80,7 @@ async def loop(
                     wait_for_units,
                 )
                 yield False
-                continue
+                break
 
             if (
                 wait_for_exact_units is not None
@@ -93,9 +93,9 @@ async def loop(
                     wait_for_exact_units,
                 )
                 yield False
-                continue
-
-        yield True
+                break
+        else:
+            yield True
 
 
 def check(
