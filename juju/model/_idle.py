@@ -7,7 +7,7 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass
-from typing import AsyncIterable
+from typing import AbstractSet, AsyncIterable
 
 from ..client._definitions import (
     ApplicationStatus,
@@ -35,7 +35,7 @@ class CheckStatus:
 async def loop(
     foo: AsyncIterable[CheckStatus | None],
     *,
-    apps: frozenset[str],
+    apps: AbstractSet[str],
     wait_for_exact_units: int | None = None,
     wait_for_units: int,
     idle_period: float,
@@ -101,7 +101,7 @@ async def loop(
 def check(
     full_status: FullStatus,
     *,
-    apps: frozenset[str],
+    apps: AbstractSet[str],
     raise_on_error: bool,
     raise_on_blocked: bool,
     status: str | None,

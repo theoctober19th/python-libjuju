@@ -19,7 +19,7 @@ async def test_wait_for_apps():
     assert await alist(
         loop(
             checks(),
-            apps=frozenset(["a"]),
+            apps={"a"},
             wait_for_units=0,
             idle_period=0,
         )
@@ -38,7 +38,7 @@ async def test_at_least_units():
         assert await alist(
             loop(
                 checks(),
-                apps=frozenset(["u"]),
+                apps={"u"},
                 wait_for_units=2,
                 idle_period=0,
             )
@@ -71,7 +71,7 @@ async def test_for_exact_units():
     assert await alist(
         loop(
             checks(),
-            apps=frozenset(["u"]),
+            apps={"u"},
             wait_for_units=1,
             wait_for_exact_units=2,
             idle_period=0,
@@ -92,7 +92,7 @@ async def test_idle_ping_pong():
     assert await alist(
         loop(
             checks(),
-            apps=frozenset(["hexanator"]),
+            apps={"hexanator"},
             wait_for_units=1,
             idle_period=15,
         )
@@ -109,7 +109,7 @@ async def test_idle_period():
     assert await alist(
         loop(
             checks(),
-            apps=frozenset(["hexanator"]),
+            apps={"hexanator"},
             wait_for_units=1,
             idle_period=15,
         )
