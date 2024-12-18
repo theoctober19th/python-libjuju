@@ -6,16 +6,24 @@ from freezegun import freeze_time
 
 from juju.model._idle import CheckStatus, loop
 
-# Missing tests
-#
-# FIXME hexanator idle period 1
-# FIXME workload maintenance, idle period 0
-# FIXME test exact count == 2
-# FIXME test exact count != 2 (1, 3)
-# FIXME exact count vs wait_for_units
-# FIXME expected idle 1s below
-# FIXME idle period 1
-# FIXME sending status=None, meaning some apps are still missing
+
+async def alist(agen):
+    return [v async for v in agen]
+
+
+async def test_wait_for_apps():
+    async def checks():
+        yield None
+        yield None
+
+    assert await alist(
+        loop(
+            checks(),
+            apps=frozenset(["a"]),
+            wait_for_units=0,
+            idle_period=0,
+        )
+    ) == [False, False]
 
 
 async def test_at_least_units():
@@ -27,15 +35,14 @@ async def test_at_least_units():
         )
 
     with freeze_time():
-        assert [
-            v
-            async for v in loop(
+        assert await alist(
+            loop(
                 checks(),
                 apps=frozenset(["u"]),
                 wait_for_units=2,
                 idle_period=0,
             )
-        ] == [False, True, True]
+        ) == [False, True, True]
 
 
 async def test_for_exact_units():
@@ -61,36 +68,49 @@ async def test_for_exact_units():
         yield too_many
         yield good
 
-    assert [
-        v
-        async for v in loop(
+    assert await alist(
+        loop(
             checks(),
             apps=frozenset(["u"]),
             wait_for_units=1,
             wait_for_exact_units=2,
             idle_period=0,
         )
-    ] == [False, True, False, True]
+    ) == [False, True, False, True]
 
 
-async def test_ping_pong():
-    good = CheckStatus({"hexanator/0"}, {"hexanator/0"}, set())
-    bad = CheckStatus({"hexanator/0"}, set(), set())
+async def test_idle_ping_pong():
+    good = CheckStatus({"hexanator/0"}, {"hexanator/0"}, {"hexanator/0"})
+    bad = CheckStatus({"hexanator/0"}, {"hexanator/0"}, set())
 
     async def checks():
         with freeze_time() as clock:
-            for _ in range(3):
-                yield good
-                clock.tick(10)
-                yield bad
+            for status in [good, bad, good, bad]:
+                yield status
                 clock.tick(10)
 
-    assert [
-        v
-        async for v in loop(
+    assert await alist(
+        loop(
             checks(),
             apps=frozenset(["hexanator"]),
             wait_for_units=1,
             idle_period=15,
         )
-    ] == [False] * 6
+    ) == [False, False, False, False]
+
+
+async def test_idle_period():
+    async def checks():
+        with freeze_time() as clock:
+            for _ in range(4):
+                yield CheckStatus({"hexanator/0"}, {"hexanator/0"}, {"hexanator/0"})
+                clock.tick(10)
+
+    assert await alist(
+        loop(
+            checks(),
+            apps=frozenset(["hexanator"]),
+            wait_for_units=1,
+            idle_period=15,
+        )
+    ) == [False, False, True, True]
