@@ -3302,13 +3302,14 @@ class Model:
         deadline = None if timeout is None else started + timeout
 
         async def status_on_demand():
-            yield _idle.check(
-                await self.get_status(),
-                apps=apps,
-                raise_on_error=raise_on_error,
-                raise_on_blocked=raise_on_blocked,
-                status=status,
-            )
+            while True:
+                yield _idle.check(
+                    await self.get_status(),
+                    apps=apps,
+                    raise_on_error=raise_on_error,
+                    raise_on_blocked=raise_on_blocked,
+                    status=status,
+                )
 
         async for done in _idle.loop(
             status_on_demand(),
