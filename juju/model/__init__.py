@@ -3298,7 +3298,8 @@ class Model:
         if any(not isinstance(o, str) for o in apps):
             raise TypeError(f"apps must be a Iterable[str], got {apps=}")
 
-        deadline = None if timeout is None else time.monotonic() + timeout
+        started = time.monotonic()
+        deadline = None if timeout is None else started + timeout
 
         async def status_on_demand():
             yield _idle.check(
@@ -3316,6 +3317,7 @@ class Model:
             wait_for_units=wait_for_units,
             idle_period=idle_period,
         ):
+            logger.info(f"wait_for_idle start{time.monotonic() - started:+.1f} {done=}")
             if done:
                 break
 

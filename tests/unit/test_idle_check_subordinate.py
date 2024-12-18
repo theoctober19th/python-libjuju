@@ -16,7 +16,11 @@ from juju.model._idle import CheckStatus, check
 
 def test_subordinate_apps(response: dict[str, Any], kwargs):
     status = check(convert(response), **kwargs)
-    assert status == CheckStatus({"ntp/0", "ubuntu/0"}, {"ntp/0", "ubuntu/0"}, set())
+    assert status == CheckStatus(
+        {"ntp/0", "ubuntu/0"},
+        {"ntp/0", "ubuntu/0"},
+        {"ntp/0", "ubuntu/0"},
+    )
 
 
 def test_subordinate_is_selective(response, kwargs):
@@ -25,7 +29,11 @@ def test_subordinate_is_selective(response, kwargs):
     ]
     subordinates["some-other/0"] = subordinates["ntp/0"]
     status = check(convert(response), **kwargs)
-    assert status == CheckStatus({"ntp/0", "ubuntu/0"}, {"ntp/0", "ubuntu/0"}, set())
+    assert status == CheckStatus(
+        {"ntp/0", "ubuntu/0"},
+        {"ntp/0", "ubuntu/0"},
+        {"ntp/0", "ubuntu/0"},
+    )
 
 
 @pytest.fixture

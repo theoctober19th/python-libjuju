@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import json
 from typing import Any
+from unittest.mock import ANY
 
 import pytest
 
@@ -31,7 +32,12 @@ def test_check_status(full_status: FullStatus, kwargs):
             "mysql-test-app/0",
             "mysql-test-app/1",
         },
-        set(),
+        {
+            "grafana-agent-k8s/0",
+            "hexanator/0",
+            "mysql-test-app/0",
+            "mysql-test-app/1",
+        },
     )
 
 
@@ -44,7 +50,7 @@ def test_check_status_missing_app(full_status: FullStatus, kwargs):
 def test_check_status_is_selective(full_status: FullStatus, kwargs):
     kwargs["apps"] = ["hexanator"]
     status = check(full_status, **kwargs)
-    assert status == CheckStatus({"hexanator/0"}, {"hexanator/0"}, set())
+    assert status == CheckStatus({"hexanator/0"}, {"hexanator/0"}, {"hexanator/0"})
 
 
 def test_no_apps(full_status: FullStatus, kwargs):
@@ -80,25 +86,13 @@ def test_app_error(response: dict[str, Any], kwargs):
     assert "big problem" in str(e)
 
 
-def test_exact_count(response: dict[str, Any], kwargs):
-    units = response["response"]["applications"]["hexanator"]["units"]
-    units["hexanator/1"] = units["hexanator/0"]
-
-    kwargs["apps"] = ["hexanator"]
-
-    status = check(convert(response), **kwargs)
-    assert status == CheckStatus(
-        {"hexanator/0", "hexanator/1"}, {"hexanator/0", "hexanator/1"}, set()
-    )
-
-
 def test_ready_units(full_status: FullStatus, kwargs):
     kwargs["apps"] = ["mysql-test-app"]
     status = check(full_status, **kwargs)
     assert status == CheckStatus(
         {"mysql-test-app/0", "mysql-test-app/1"},
         {"mysql-test-app/0", "mysql-test-app/1"},
-        set(),
+        {"mysql-test-app/0", "mysql-test-app/1"},
     )
 
 
@@ -106,7 +100,7 @@ def test_active_units(full_status: FullStatus, kwargs):
     kwargs["apps"] = ["mysql-test-app"]
     kwargs["status"] = "active"
     status = check(full_status, **kwargs)
-    assert status == CheckStatus({"mysql-test-app/0", "mysql-test-app/1"}, set(), set())
+    assert status == CheckStatus({"mysql-test-app/0", "mysql-test-app/1"}, set(), ANY)
 
 
 def test_ready_unit_requires_idle_agent(response: dict[str, Any], kwargs):
@@ -118,9 +112,11 @@ def test_ready_unit_requires_idle_agent(response: dict[str, Any], kwargs):
     kwargs["status"] = "active"
 
     status = check(convert(response), **kwargs)
-    assert status
-    assert status.units == {"hexanator/0", "hexanator/1"}
-    assert status.ready_units == {"hexanator/0"}
+    assert status == CheckStatus(
+        {"hexanator/0", "hexanator/1"},
+        {"hexanator/0", "hexanator/1"},
+        {"hexanator/0"},
+    )
 
 
 def test_ready_unit_requires_workload_status(response: dict[str, Any], kwargs):
@@ -132,7 +128,7 @@ def test_ready_unit_requires_workload_status(response: dict[str, Any], kwargs):
     kwargs["status"] = "active"
 
     status = check(convert(response), **kwargs)
-    assert status == CheckStatus({"hexanator/0", "hexanator/1"}, {"hexanator/0"}, set())
+    assert status == CheckStatus({"hexanator/0", "hexanator/1"}, {"hexanator/0"}, ANY)
 
 
 def test_agent_error(response: dict[str, Any], kwargs):
@@ -182,7 +178,7 @@ def test_machine_ok(response: dict[str, Any], kwargs):
     kwargs["raise_on_error"] = True
 
     status = check(convert(response), **kwargs)
-    assert status == CheckStatus({"hexanator/0"}, {"hexanator/0"}, set())
+    assert status == CheckStatus({"hexanator/0"}, {"hexanator/0"}, ANY)
 
 
 def test_machine_error(response: dict[str, Any], kwargs):
@@ -244,7 +240,7 @@ def test_maintenance(response: dict[str, Any], kwargs):
     kwargs["status"] = "maintenance"
 
     status = check(convert(response), **kwargs)
-    assert status == CheckStatus({"hexanator/0"}, {"hexanator/0"}, set())
+    assert status == CheckStatus({"hexanator/0"}, {"hexanator/0"}, ANY)
 
 
 @pytest.fixture

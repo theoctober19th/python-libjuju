@@ -44,7 +44,7 @@ async def loop(
     idle_since: dict[str, float] = {}
 
     async for status in foo:
-        logger.warning("FIXME unit test debug %r", status)
+        logger.info("wait_for_idle iteration %s", status)
         now = time.monotonic()
 
         if not status:
@@ -52,51 +52,50 @@ async def loop(
             continue
 
         expected_idle_since = now - idle_period
-        rv = True
 
         # FIXME there's some confusion about what a "busy" unit is
         # are we ready when over the last idle_period, every time sampled:
         # a. >=N units were ready (possibly different each time), or
         # b. >=N units were ready each time
         for name in status.units:
-            if name in status.ready_units:
+            if name in status.idle_units:
                 idle_since[name] = min(now, idle_since.get(name, float("inf")))
             else:
                 idle_since[name] = float("inf")
+
+        if busy := {n for n, t in idle_since.items() if t > expected_idle_since}:
+            logger.info("Waiting for units to be idle enough: %s", busy)
+            yield False
+            continue
 
         for app_name in apps:
             ready_units = [
                 n for n in status.ready_units if n.startswith(f"{app_name}/")
             ]
             if len(ready_units) < wait_for_units:
-                logger.warn(
+                logger.info(
                     "Waiting for app %r units %s >= %s",
                     app_name,
                     len(status.ready_units),
                     wait_for_units,
                 )
-                rv = False
+                yield False
+                continue
 
             if (
                 wait_for_exact_units is not None
                 and len(ready_units) != wait_for_exact_units
             ):
-                logger.warn(
+                logger.info(
                     "Waiting for app %r units %s == %s",
                     app_name,
                     len(ready_units),
                     wait_for_exact_units,
                 )
-                rv = False
+                yield False
+                continue
 
-        # FIXME possible interaction between "wait_for_units" and "idle_period"
-        # Assume that we've got some units ready and some busy
-        # What are the semantics for returning True?
-        if busy := [n for n, t in idle_since.items() if t > expected_idle_since]:
-            logger.warn("Waiting for %s to be idle enough", busy)
-            rv = False
-
-        yield rv
+        yield True
 
 
 def check(
@@ -175,7 +174,6 @@ def check(
     rv = CheckStatus(set(), set(), set())
 
     for app_name in apps:
-        ready_units = []
         app = full_status.applications[app_name]
         assert isinstance(app, ApplicationStatus)
         for unit_name, unit in _app_units(full_status, app_name).items():
@@ -183,16 +181,12 @@ def check(
             assert unit.agent_status
             assert unit.workload_status
 
-            if unit.agent_status.status != "idle":
-                continue
-            if status and unit.workload_status.status != status:
-                continue
+            if unit.agent_status.status == "idle":
+                rv.idle_units.add(unit_name)
 
-            ready_units.append(unit)
-            rv.ready_units.add(unit_name)
+            if not status or unit.workload_status.status == status:
+                rv.ready_units.add(unit_name)
 
-    # FIXME
-    # rv.idle_units -- depends on agent status only, not workload status
     return rv
 
 
