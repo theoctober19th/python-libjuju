@@ -11,6 +11,14 @@ Table of Contents
 -----------------
 
 .. toctree::
+   :caption: How-to guides
+   :glob:	     
+   :maxdepth: 3
+	      
+   howto/index
+   
+
+.. toctree::
    :caption: Overview
    :glob:
    :maxdepth: 3
