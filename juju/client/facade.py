@@ -499,10 +499,14 @@ def _convert_response(response: dict[str, Any], *, cls: type[Type] | None) -> An
     if cls is None:
         return response
     if "error" in response:
+        # TODO: I don't think this ever happens,
+        # errors are handled by Connection.rpc(),
+        # though, admittedly the shape is different.
         cls = CLASSES["Error"]
     if typing_inspect.is_generic_type(cls) and issubclass(
         typing_inspect.get_origin(cls), Sequence
     ):
+        # TODO: I'm not sure this ever happens either.
         parameters = typing_inspect.get_parameters(cls)
         result = []
         item_cls = parameters[0]
