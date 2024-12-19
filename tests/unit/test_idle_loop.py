@@ -41,11 +41,10 @@ def test_wait_for_apps():
 
 def test_at_least_units():
     def checks():
-        yield CheckStatus({"u/0", "u/1", "u/2"}, {"u/0"}, {"u/0", "u/1", "u/2"})
-        yield CheckStatus({"u/0", "u/1", "u/2"}, {"u/0", "u/1"}, {"u/0", "u/1", "u/2"})
-        yield CheckStatus(
-            {"u/0", "u/1", "u/2"}, {"u/0", "u/1", "u/2"}, {"u/0", "u/1", "u/2"}
-        )
+        units = {"u/0", "u/1", "u/2"}
+        yield CheckStatus(units, ready_units={"u/0"}, idle_units=units)
+        yield CheckStatus(units, ready_units={"u/0", "u/1"}, idle_units=units)
+        yield CheckStatus(units, ready_units={"u/0", "u/1", "u/2"}, idle_units=units)
 
     with freeze_time():
         assert unroll(
@@ -57,21 +56,10 @@ def test_at_least_units():
 
 
 def test_for_exact_units():
-    good = CheckStatus(
-        {"u/0", "u/1", "u/2"},
-        {"u/1", "u/2"},
-        {"u/0", "u/1", "u/2"},
-    )
-    too_few = CheckStatus(
-        {"u/0", "u/1", "u/2"},
-        {"u/2"},
-        {"u/0", "u/1", "u/2"},
-    )
-    too_many = CheckStatus(
-        {"u/0", "u/1", "u/2"},
-        {"u/1", "u/2", "u/0"},
-        {"u/0", "u/1", "u/2"},
-    )
+    units = {"u/0", "u/1", "u/2"}
+    good = CheckStatus(units, ready_units={"u/1", "u/2"}, idle_units=units)
+    too_few = CheckStatus(units, ready_units={"u/2"}, idle_units=units)
+    too_many = CheckStatus(units, ready_units={"u/1", "u/2", "u/0"}, idle_units=units)
 
     def checks():
         yield too_few
@@ -89,8 +77,8 @@ def test_for_exact_units():
 
 
 def test_idle_ping_pong():
-    good = CheckStatus({"hexanator/0"}, {"hexanator/0"}, {"hexanator/0"})
-    bad = CheckStatus({"hexanator/0"}, {"hexanator/0"}, set())
+    good = CheckStatus({"hexanator/0"}, {"hexanator/0"}, idle_units={"hexanator/0"})
+    bad = CheckStatus({"hexanator/0"}, {"hexanator/0"}, idle_units=set())
 
     def checks():
         with freeze_time() as clock:

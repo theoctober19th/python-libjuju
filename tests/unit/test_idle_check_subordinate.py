@@ -7,9 +7,7 @@ from typing import Any
 
 import pytest
 
-from juju.client._definitions import (
-    FullStatus,
-)
+from juju.client._definitions import FullStatus
 from juju.client.facade import _convert_response
 from juju.model._idle import CheckStatus, check
 
