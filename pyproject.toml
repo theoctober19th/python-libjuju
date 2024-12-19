@@ -1,6 +1,6 @@
 [project]
 name = "juju"
-version = "3.6.1.0rc5"  # Stop-gap until dynamic versioning is done; must be in sync with juju/version.py:CLIENT_VERSION
+version = "3.6.1.0rc6"  # Stop-gap until dynamic versioning is done; must be in sync with juju/version.py:CLIENT_VERSION
 description = "Python library for Juju"
 readme = "docs/readme.rst"
 license = { file = "LICENSE" }
