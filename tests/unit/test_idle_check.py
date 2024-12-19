@@ -164,7 +164,7 @@ def test_workload_error(response: dict[str, Any], kwargs):
 def test_machine_ok(response: dict[str, Any], kwargs):
     app = response["response"]["applications"]["hexanator"]
     app["units"]["hexanator/0"]["machine"] = "42"
-    # https://github.com/dimaqq/juju-schema-analysis/blob/main/schemas-juju-3.5.4.txt#L3611-L3674
+    # https://github.com/dimaqq/juju-schema-analysis/blob/main/schemas-juju-3.5.4.model-user.txt#L3611-L3674
     response["response"]["machines"] = {
         "42": {
             "instance-status": {
