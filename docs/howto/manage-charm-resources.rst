@@ -25,17 +25,17 @@ Specify the resources to be deployed with a charm
 To specify a resource during deployment, on a connected Model object, use the `deploy` method, passing the resources as a parameter. For example:
 
 .. code:: python
-	  
+
    resources = {"file-res": "test.file"}
    app = await model.deploy(charm_path, resources=resources)
 
 To update a resource after deployment by uploading file from local disk, on an Application object, use the `attach_resource()` method, passing resource name, file name and the file object as parameters.
 
 .. code:: python
-	  
+
    with open(str(charm_path / 'test.file')) as f:
        app.attach_resource('file-res', 'test.file', f)
-   
+
 
 
 > See more: `deploy() <https://pythonlibjuju.readthedocs.io/en/latest/api/juju.model.html#juju.model.Model.deploy>`_, `attach_resource() <https://pythonlibjuju.readthedocs.io/en/latest/api/juju.application.html#juju.application.Application.attach_resource>`_, `Model (module) <https://pythonlibjuju.readthedocs.io/en/latest/narrative/model.html>`_

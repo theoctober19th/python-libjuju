@@ -17,7 +17,7 @@ Add a same-model relation
 To add a same-model relation between two applications, on a connected Model, use the `integrate()` method.
 
 .. code:: python
-	  
+
    await my_model.integrate('mysql', 'mediawiki')
 
    # Integrate with particular endpoints
@@ -41,7 +41,7 @@ View all the current relations
 To view the current relations in a model, directly access the Model's `relations` property.
 
 .. code:: python
-	  
+
    my_model.relations
 
 > See more: `Model.relations (property) <https://pythonlibjuju.readthedocs.io/en/latest/api/juju.model.html#juju.model.Model.relations>`_
@@ -53,7 +53,7 @@ Remove a relation
 To remove a relation, use the `remove_relation()` method on an Application object.
 
 .. code:: python
-	  
+
    await my_app.remove_relation('mediawiki', 'mysql:db')
 
 > See more: `remove_relation() <https://pythonlibjuju.readthedocs.io/en/latest/api/juju.application.html#juju.application.Application.remove_relation>`_

@@ -24,4 +24,3 @@
    Manage storage <manage-storage>
    Manage storage pools <manage-storage-pools>
    Manage spaces <manage-spaces>
-

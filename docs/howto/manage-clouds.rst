@@ -19,8 +19,8 @@ To add a cloud, use the `Controller.add_cloud()` method on a connected `Controll
 .. code:: python
 
    from juju.client import client as jujuclient
-   
-   await my_controller.add_cloud("my-cloud", 
+
+   await my_controller.add_cloud("my-cloud",
        jujuclient.Cloud(
                auth_types=["userpass"],
                endpoint="http://localhost:1234",

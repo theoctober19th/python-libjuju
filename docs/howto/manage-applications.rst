@@ -15,7 +15,7 @@ To deploy an application, find and deploy a charm / bundle that delivers it.
 View details about an application
 ---------------------------------
 
-To view details about an application on python-libjuju, you may use various `get_*` methods that are defined for applications. 
+To view details about an application on python-libjuju, you may use various `get_*` methods that are defined for applications.
 
 For example, to get the config for an application, call `get_config()` method on an `Application` object:
 
@@ -30,17 +30,17 @@ For example, to get the config for an application, call `get_config()` method on
 Trust an application with a credential
 --------------------------------------
 
-Some applications may require access to the backing cloud in order to fulfil their purpose (e.g., storage-related tasks). In such cases, the remote credential associated with the current model would need to be shared with the application. When the Juju administrator allows this to occur the application is said to be *trusted*. 
+Some applications may require access to the backing cloud in order to fulfil their purpose (e.g., storage-related tasks). In such cases, the remote credential associated with the current model would need to be shared with the application. When the Juju administrator allows this to occur the application is said to be *trusted*.
 
 To trust an application during deployment in python-libjuju, you may call the `Model.deploy()` with the `trust` parameter:
 
-.. code:: python 
+.. code:: python
 
    await my_model.deploy(..., trust=True, ...)
 
 To trust an application after deployment, you may use the `Application.set_trusted()` method:
 
-.. code:: python 
+.. code:: python
 
    await my_app.set_trusted(True)
 
@@ -58,7 +58,7 @@ Configure an application
 
 **Get values.** To view the existing configuration for an application on python-libjuju, you may use the `Application.get_config()` method:
 
-.. code:: python 
+.. code:: python
 
    config = await my_app.get_config()
 
@@ -67,14 +67,14 @@ Configure an application
 
 * To configure an application at deployment, simply provide a `config` map during the `Model.deploy()` call:
 
-.. code:: python 
+.. code:: python
 
    await my_model.deploy(..., config={'redirect-map':'https://demo'}, ...)
 
 
 * To configure an application post deployment, you may use the `Application.set_config()` method, similar to passing config in the deploy call above:
 
-.. code:: python 
+.. code:: python
 
    await my_app.set_config(config={'redirect-map':'https://demo'})
 
@@ -92,7 +92,7 @@ Scale an application vertically
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To scale an application vertically, set constraints for the resources that the application's units will be deployed on.
- 
+
 > See more: :ref:`manage-constraints-for-an-application`
 
 Scale an application horizontally
@@ -107,7 +107,7 @@ Make an application highly available
 ------------------------------------
 > See also: :ref:`juju:high-availability`
 
-1. Find out if the charm delivering the application supports high availability natively or not. If the latter, find out what you need to do. This could mean integrating with a load balancing reverse proxy, configuring storage etc. 
+1. Find out if the charm delivering the application supports high availability natively or not. If the latter, find out what you need to do. This could mean integrating with a load balancing reverse proxy, configuring storage etc.
 
 > See more: `Charmhub <https://charmhub.io/>`_
 
@@ -115,7 +115,7 @@ Make an application highly available
 
 > See more: {ref}`How to scale an application horizontally <5476md>`
 
-Every time a unit is added to an application, Juju will spread out that application's units, distributing them evenly as supported by the provider (e.g., across multiple availability zones) to best ensure high availability. So long as a cloud's availability zones don't all fail at once, and the charm and the charm's application are well written (changing leaders, coordinating across units, etc.), you can rest assured that cloud downtime will not affect your application. 
+Every time a unit is added to an application, Juju will spread out that application's units, distributing them evenly as supported by the provider (e.g., across multiple availability zones) to best ensure high availability. So long as a cloud's availability zones don't all fail at once, and the charm and the charm's application are well written (changing leaders, coordinating across units, etc.), you can rest assured that cloud downtime will not affect your application.
 
 > See more: `Charmhub | wordpress <https://charmhub.io/wordpress>`_, `Charmhub | mediawiki <https://charmhub.io/mediawiki>`_, `Charmhub | haproxy <https://charmhub.io/haproxy>`_
 
@@ -130,31 +130,31 @@ Manage an application’s public availability over the network
 
 To expose some or all endpoints of an application over a network, you may use the `Application.expose()` method, as follows:
 
-.. code:: python 
+.. code:: python
 
    await my_app.expose(exposed_endpoints=None) # everything's reachable from 0.0.0.0/0.
 
 
 To expose to specific CIDRs or spaces, you may use an `ExposedEndpoint` object to describe that, as follows:
 
-.. code:: python 
+.. code:: python
 
    # For spaces
    await my_app.expose(exposed_endpoints={"": ExposedEndpoint(to_spaces=["alpha"]) })
-   
+
    # For cidrs
    await my_app.expose(exposed_endpoints={"": ExposedEndpoint(to_cidrs=["10.0.0.0/24"])})
-   
+
    # You may use both at the same time too
    await my_app.expose(exposed_endpoints={
                "ubuntu": ExposedEndpoint(to_spaces=["alpha"], to_cidrs=["10.0.0.0/24"])
            })
-   
+
 
 
 To unexpose an application, use the `Application.unexpose()` method:
 
-.. code:: python 
+.. code:: python
 
    await my_app.unexpose() # unexposes the entire application
 
@@ -174,7 +174,7 @@ Manage constraints for an application
 
 * To set at deployment, simply provide a `constraints` map during the `Model.deploy()` call:
 
-.. code:: python 
+.. code:: python
 
    await my_model.deploy(..., constraints={, 'arch': 'amd64', 'mem': 256}, ...)
 
@@ -182,13 +182,13 @@ Manage constraints for an application
 * To set constraints post deployment, you may use the `Application.set_contraints()` method, similar to passing constraints in the deploy call above:
 
 .. code:: python
-	  
+
    await my_app.set_constraints(constraints={, 'arch': 'amd64', 'mem': 256})
 
 
 **Get values.** To see what constraints are set on an application, use the `Application.get_constraints()` method:
 
-.. code:: python 
+.. code:: python
 
    await my_app.get_constraints()
 
@@ -201,7 +201,7 @@ Change space bindings for an application
 
 To set bindings for an application on python-libjuju, simply pass the `bind` parameter at the `Model.deploy()` call:
 
-.. code:: python 
+.. code:: python
 
    await my_model.deploy(..., bind="db=db db-client=db public admin-api=public", ...)
 
@@ -212,7 +212,7 @@ Python-libjuju currently doesn't support resetting space bindings post deploymen
 Upgrade an application
 ----------------------
 
-To upgrade an application, update its charm. 
+To upgrade an application, update its charm.
 
 > See more: :ref:`update-a-charm`
 
@@ -228,13 +228,13 @@ To remove an application from a model in python-libjuju, you have two choices:
 (1) If you have a reference to a connected model object (connected to the model you're working on), then you may use the `Model.remove_application()` method:
 
 .. code:: python
-	  
+
    await my_model.remove_application(my_app.name)
 
 
 (2) If you have a reference to the application you want to remove, then you may use the `Application.destroy()` directly on the application object you want to remove:
 
-.. code:: python 
+.. code:: python
 
    await my_app.destroy()
 

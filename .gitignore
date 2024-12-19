@@ -16,3 +16,4 @@ pytestdebug.log
 deb_dist
 *.tar.gz
 .idea/
+build/
