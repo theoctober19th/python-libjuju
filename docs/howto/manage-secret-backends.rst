@@ -18,7 +18,7 @@ To add a secret backend to a controller, on a connected Controller, use the `add
 
    await my_controller.add_secret_backends("1001", "myvault", "vault", {"endpoint": vault_url, "token": keys["root_token"]})
 
-> See more: `add_secret_backend() <https://pythonlibjuju.readthedocs.io/en/latest/api/juju.controller.html#juju.controller.Controller.add_secret_backends>`_, `Controller (module) <https://pythonlibjuju.readthedocs.io/en/latest/narrative/controller.html>`_
+> See more: `add_secret_backends() <https://pythonlibjuju.readthedocs.io/en/latest/api/juju.controller.html#juju.controller.Controller.add_secret_backends>`_, `Controller (module) <https://pythonlibjuju.readthedocs.io/en/latest/narrative/controller.html>`_
 
 
 View all the secret backends available on a controller
@@ -46,7 +46,7 @@ To update a secret backend on the controller, on a connected Controller, use the
 
 Check out the documentation for the full list of arguments.
 
-> See more: `update_secret_backend() <https://pythonlibjuju.readthedocs.io/en/latest/api/juju.controller.html#juju.controller.Controller.update_secret_backends>`_, `Controller (module) <https://pythonlibjuju.readthedocs.io/en/latest/narrative/controller.html>`_
+> See more: `update_secret_backends() <https://pythonlibjuju.readthedocs.io/en/latest/api/juju.controller.html#juju.controller.Controller.update_secret_backends>`_, `Controller (module) <https://pythonlibjuju.readthedocs.io/en/latest/narrative/controller.html>`_
 
 Remove a secret backend
 -----------------------

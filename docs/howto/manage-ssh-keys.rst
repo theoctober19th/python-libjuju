@@ -17,7 +17,7 @@ To add a public `ssh` key to a model, on a connected Model object, use the `add_
    await my_model.add_ssh_key('admin', SSH_KEY)
 
 
-> See more: `add_ssh_key() `https://pythonlibjuju.readthedocs.io/en/latest/api/juju.model.html#juju.model.Model.add_ssh_key>`_, `Model (module) <https://pythonlibjuju.readthedocs.io/en/latest/narrative/model.html>`_
+> See more: `add_ssh_key() https://pythonlibjuju.readthedocs.io/en/latest/api/juju.model.html#juju.model.Model.add_ssh_key>`_, `Model (module) <https://pythonlibjuju.readthedocs.io/en/latest/narrative/model.html>`_
 
 
 View the available SSH keys

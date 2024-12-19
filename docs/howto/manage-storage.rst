@@ -50,8 +50,7 @@ To detach a storage instance from a unit, on a Unit object, use the `detach_stor
 
    await my_unit.detach_storage("osd-devices/2")
 
-
-> See more: `detach_storage() <https://pythonlibjuju.readthedocs.io/en/latest/api/juju.unit.html#juju.unit.Unit.detach_storage>`_, `Unit (module) <https://pythonlibjuju.readthedocs.io/en/latest/narrative/unit.html)>`_
+> See more: `detach_storage() <https://pythonlibjuju.readthedocs.io/en/latest/api/juju.unit.html#juju.unit.Unit.detach_storage>`_, `Unit (module) <https://pythonlibjuju.readthedocs.io/en/latest/narrative/unit.html>`_
 
 
 Attach storage

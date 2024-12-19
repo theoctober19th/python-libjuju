@@ -38,7 +38,7 @@ To update an existing storage pool attributes, on a connected Model object, use 
 
    await my_model.update_storage_pool(
        "operator-storage",
-       attributes={"volume-type":"provisioned-iops", "iops"="40"})
+       attributes={"volume-type": "provisioned-iops", "iops": "40"})
 
 > See more: `update_storage_pool() <https://pythonlibjuju.readthedocs.io/en/latest/api/juju.model.html#juju.model.Model.update_storage_pool>`_, `Model (module) <https://pythonlibjuju.readthedocs.io/en/latest/narrative/model.html>`_
 

@@ -176,14 +176,14 @@ Manage constraints for an application
 
 .. code:: python
 
-   await my_model.deploy(..., constraints={, 'arch': 'amd64', 'mem': 256}, ...)
+   await my_model.deploy(..., constraints={'arch': 'amd64', 'mem': 256}, ...)
 
 
 * To set constraints post deployment, you may use the `Application.set_contraints()` method, similar to passing constraints in the deploy call above:
 
 .. code:: python
 
-   await my_app.set_constraints(constraints={, 'arch': 'amd64', 'mem': 256})
+   await my_app.set_constraints(constraints={'arch': 'amd64', 'mem': 256})
 
 
 **Get values.** To see what constraints are set on an application, use the `Application.get_constraints()` method:

@@ -46,7 +46,7 @@ If you're on  an IAAS system (machine applications):
 Show details about a unit
 -------------------------
 
-Too see details about a unit in `python-libjuju` client, you can use various fields and methods of a `Unit` object. For example, to get the `public_address` of a unit:
+To see details about a unit in `python-libjuju` client, you can use various fields and methods of a `Unit` object. For example, to get the `public_address` of a unit:
 
 .. code:: python
 
@@ -81,9 +81,9 @@ To mark unit errors as resolved in the `python-libjuju` client, you can call the
 
 .. code:: python
 
-   my_unit.resolved()
+   await my_unit.resolved()
 
-> See more: `Unit.resolved()`
+> See more: `Unit.resolved() https://pythonlibjuju.readthedocs.io/en/latest/api/juju.unit.html#juju.unit.Unit.resolved`_
 
 
 Remove a unit

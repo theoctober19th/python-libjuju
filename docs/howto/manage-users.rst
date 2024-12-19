@@ -109,7 +109,7 @@ To enable or disable a user, on a User object, use the `enable()` and `disable()
 
    await user_object.disable()
 
-You can also check if a user is enabled or disabled using the `enabled` and `disabled` properties on the Unit object.
+You can also check if a user is enabled or disabled using the `enabled` and `disabled` properties on the User object.
 
 .. code:: python
 
