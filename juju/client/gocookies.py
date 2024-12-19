@@ -6,7 +6,7 @@ import http.cookiejar as cookiejar
 import json
 import time
 
-import pyrfc3339
+from backports.datetime_fromisoformat import datetime_fromisoformat
 
 
 class GoCookieJar(cookiejar.FileCookieJar):
@@ -52,7 +52,7 @@ def go_to_py_cookie(go_cookie):
     """Convert a Go-style JSON-unmarshaled cookie into a Python cookie"""
     expires = None
     if go_cookie.get("Expires") is not None:
-        t = pyrfc3339.parse(go_cookie["Expires"])
+        t = datetime_fromisoformat(go_cookie["Expires"])
         expires = t.timestamp()
     return cookiejar.Cookie(
         version=0,
@@ -101,8 +101,9 @@ def py_to_go_cookie(py_cookie):
     if py_cookie.path_specified:
         go_cookie["Path"] = py_cookie.path
     if py_cookie.expires is not None:
-        unix_time = datetime.datetime.fromtimestamp(py_cookie.expires)
         # Note: fromtimestamp bizarrely produces a time without
         # a time zone, so we need to use accept_naive.
-        go_cookie["Expires"] = pyrfc3339.generate(unix_time, accept_naive=True)
+        go_cookie["Expires"] = datetime.datetime.fromtimestamp(
+            py_cookie.expires
+        ).isoformat()
     return go_cookie
