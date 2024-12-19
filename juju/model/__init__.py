@@ -3300,24 +3300,24 @@ class Model:
 
         started = time.monotonic()
         deadline = None if timeout is None else started + timeout
+        loop = _idle.Loop(
+            apps=apps,
+            wait_for_exact_units=wait_for_exact_units,
+            wait_for_units=wait_for_units,
+            idle_period=idle_period,
+        )
 
-        async def status_on_demand():
-            while True:
-                yield _idle.check(
+        while True:
+            done = loop.next(
+                _idle.check(
                     await self.get_status(),
                     apps=apps,
                     raise_on_error=raise_on_error,
                     raise_on_blocked=raise_on_blocked,
                     status=status,
                 )
+            )
 
-        async for done in _idle.loop(
-            status_on_demand(),
-            apps=apps,
-            wait_for_exact_units=wait_for_exact_units,
-            wait_for_units=wait_for_units,
-            idle_period=idle_period,
-        ):
             logger.info(f"wait_for_idle start{time.monotonic() - started:+.1f} {done=}")
             if done:
                 break

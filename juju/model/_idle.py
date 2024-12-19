@@ -7,7 +7,7 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass
-from typing import AbstractSet, AsyncIterable
+from typing import AbstractSet
 
 from ..client._definitions import (
     ApplicationStatus,
@@ -32,26 +32,29 @@ class CheckStatus:
     """Units with stable agent status (FIXME details)."""
 
 
-async def loop(
-    foo: AsyncIterable[CheckStatus | None],
-    *,
-    apps: AbstractSet[str],
-    wait_for_exact_units: int | None = None,
-    wait_for_units: int,
-    idle_period: float,
-) -> AsyncIterable[bool]:
-    """The outer, time-dependents logic of a wait_for_idle loop."""
-    idle_since: dict[str, float] = {}
+class Loop:
+    def __init__(
+        self,
+        *,
+        apps: AbstractSet[str],
+        wait_for_exact_units: int | None = None,
+        wait_for_units: int,
+        idle_period: float,
+    ):
+        self.apps = apps
+        self.wait_for_exact_units = wait_for_exact_units
+        self.wait_for_units = wait_for_units
+        self.idle_period = idle_period
+        self.idle_since: dict[str, float] = {}
 
-    async for status in foo:
+    def next(self, status: CheckStatus | None) -> bool:
         logger.info("wait_for_idle iteration %s", status)
         now = time.monotonic()
 
         if not status:
-            yield False
-            continue
+            return False
 
-        expected_idle_since = now - idle_period
+        expected_idle_since = now - self.idle_period
 
         # FIXME there's some confusion about what a "busy" unit is
         # are we ready when over the last idle_period, every time sampled:
@@ -59,43 +62,42 @@ async def loop(
         # b. >=N units were ready each time
         for name in status.units:
             if name in status.idle_units:
-                idle_since[name] = min(now, idle_since.get(name, float("inf")))
+                self.idle_since[name] = min(
+                    now, self.idle_since.get(name, float("inf"))
+                )
             else:
-                idle_since[name] = float("inf")
+                self.idle_since[name] = float("inf")
 
-        if busy := {n for n, t in idle_since.items() if t > expected_idle_since}:
+        if busy := {n for n, t in self.idle_since.items() if t > expected_idle_since}:
             logger.info("Waiting for units to be idle enough: %s", busy)
-            yield False
-            continue
+            return False
 
-        for app_name in apps:
+        for app_name in self.apps:
             ready_units = [
                 n for n in status.ready_units if n.startswith(f"{app_name}/")
             ]
-            if len(ready_units) < wait_for_units:
+            if len(ready_units) < self.wait_for_units:
                 logger.info(
                     "Waiting for app %r units %s >= %s",
                     app_name,
                     len(status.ready_units),
-                    wait_for_units,
+                    self.wait_for_units,
                 )
-                yield False
-                break
+                return False
 
             if (
-                wait_for_exact_units is not None
-                and len(ready_units) != wait_for_exact_units
+                self.wait_for_exact_units is not None
+                and len(ready_units) != self.wait_for_exact_units
             ):
                 logger.info(
                     "Waiting for app %r units %s == %s",
                     app_name,
                     len(ready_units),
-                    wait_for_exact_units,
+                    self.wait_for_exact_units,
                 )
-                yield False
-                break
-        else:
-            yield True
+                return False
+
+        return True
 
 
 def check(
