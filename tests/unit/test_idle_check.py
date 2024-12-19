@@ -20,19 +20,19 @@ from juju.model._idle import CheckStatus, check
 def test_check_status(full_status: FullStatus, kwargs):
     status = check(full_status, **kwargs)
     assert status == CheckStatus(
-        {
+        units={
             "grafana-agent-k8s/0",
             "hexanator/0",
             "mysql-test-app/0",
             "mysql-test-app/1",
         },
-        {
+        ready_units={
             "grafana-agent-k8s/0",
             "hexanator/0",
             "mysql-test-app/0",
             "mysql-test-app/1",
         },
-        {
+        idle_units={
             "grafana-agent-k8s/0",
             "hexanator/0",
             "mysql-test-app/0",

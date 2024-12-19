@@ -27,9 +27,9 @@ class CheckStatus:
     units: set[str]
     """All units visible at this point."""
     ready_units: set[str]
-    """Units in good status (workload, agent, machine?)."""
+    """Units with the expected workload status."""
     idle_units: set[str]
-    """Units with stable agent status (FIXME details)."""
+    """Units with stable (idle) agent status."""
 
 
 class Loop:
@@ -56,10 +56,6 @@ class Loop:
 
         expected_idle_since = now - self.idle_period
 
-        # FIXME there's some confusion about what a "busy" unit is
-        # are we ready when over the last idle_period, every time sampled:
-        # a. >=N units were ready (possibly different each time), or
-        # b. >=N units were ready each time
         for name in status.units:
             if name in status.idle_units:
                 self.idle_since[name] = min(
@@ -114,71 +110,23 @@ def check(
             logger.info("Waiting for app %r", app_name)
             return None
 
-    # Order of errors:
-    #
-    # Machine error (any unit of any app from apps)
-    # Agent error (-"-)
-    # Workload error (-"-)
-    # App error (any app from apps)
-    #
-    # Workload blocked (any unit of any app from apps)
-    # App blocked (any app from apps)
     units: dict[str, UnitStatus] = {}
-
-    for app_name in apps:
-        units.update(_app_units(full_status, app_name))
-
-    for unit_name, unit in units.items():
-        if unit.machine:
-            machine = full_status.machines[unit.machine]
-            assert isinstance(machine, MachineStatus)
-            assert machine.instance_status
-            if machine.instance_status.status == "error" and raise_on_error:
-                raise JujuMachineError(
-                    f"{unit_name!r} machine {unit.machine!r} has errored: {machine.instance_status.info!r}"
-                )
-
-    for unit_name, unit in units.items():
-        assert unit.agent_status
-        if unit.agent_status.status == "error" and raise_on_error:
-            raise JujuAgentError(
-                f"{unit_name!r} agent has errored: {unit.agent_status.info!r}"
-            )
-
-    for unit_name, unit in units.items():
-        assert unit.workload_status
-        if unit.workload_status.status == "error" and raise_on_error:
-            raise JujuUnitError(
-                f"{unit_name!r} workload has errored: {unit.workload_status.info!r}"
-            )
-
-    for app_name in apps:
-        app = full_status.applications[app_name]
-        assert isinstance(app, ApplicationStatus)
-        assert app.status
-        if app.status.status == "error" and raise_on_error:
-            raise JujuAppError(f"{app_name!r} has errored: {app.status.info!r}")
-
-    for unit_name, unit in units.items():
-        assert unit.workload_status
-        if unit.workload_status.status == "blocked" and raise_on_blocked:
-            raise JujuUnitError(
-                f"{unit_name!r} workload is blocked: {unit.workload_status.info!r}"
-            )
-
-    for app_name in apps:
-        app = full_status.applications[app_name]
-        assert isinstance(app, ApplicationStatus)
-        assert app.status
-        if app.status.status == "blocked" and raise_on_blocked:
-            raise JujuAppError(f"{app_name!r} is blocked: {app.status.info!r}")
-
     rv = CheckStatus(set(), set(), set())
 
     for app_name in apps:
+        units.update(app_units(full_status, app_name))
+
+    if raise_on_error:
+        check_errors(full_status, apps, units)
+
+    if raise_on_blocked:
+        check_blocked(full_status, apps, units)
+
+    for app_name in apps:
         app = full_status.applications[app_name]
         assert isinstance(app, ApplicationStatus)
-        for unit_name, unit in _app_units(full_status, app_name).items():
+
+        for unit_name, unit in app_units(full_status, app_name).items():
             rv.units.add(unit_name)
             assert unit.agent_status
             assert unit.workload_status
@@ -192,7 +140,72 @@ def check(
     return rv
 
 
-def _app_units(full_status: FullStatus, app_name: str) -> dict[str, UnitStatus]:
+def check_errors(
+    full_status: FullStatus, apps: AbstractSet[str], units: dict[str, UnitStatus]
+) -> None:
+    """Check the full status for error conditions, in this order:
+
+    - Machine error (any unit of any app from apps)
+    - Agent error (-"-)
+    - Workload error (-"-)
+    - App error (any app from apps)
+    """
+    for unit_name, unit in units.items():
+        if unit.machine:
+            machine = full_status.machines[unit.machine]
+            assert isinstance(machine, MachineStatus)
+            assert machine.instance_status
+            if machine.instance_status.status == "error":
+                raise JujuMachineError(
+                    f"{unit_name!r} machine {unit.machine!r} has errored: {machine.instance_status.info!r}"
+                )
+
+    for unit_name, unit in units.items():
+        assert unit.agent_status
+        if unit.agent_status.status == "error":
+            raise JujuAgentError(
+                f"{unit_name!r} agent has errored: {unit.agent_status.info!r}"
+            )
+
+    for unit_name, unit in units.items():
+        assert unit.workload_status
+        if unit.workload_status.status == "error":
+            raise JujuUnitError(
+                f"{unit_name!r} workload has errored: {unit.workload_status.info!r}"
+            )
+
+    for app_name in apps:
+        app = full_status.applications[app_name]
+        assert isinstance(app, ApplicationStatus)
+        assert app.status
+        if app.status.status == "error":
+            raise JujuAppError(f"{app_name!r} has errored: {app.status.info!r}")
+
+
+def check_blocked(
+    full_status: FullStatus, apps: AbstractSet[str], units: dict[str, UnitStatus]
+) -> None:
+    """Check the full status for blocked conditions, in this order:
+
+    - Workload blocked (any unit of any app from apps)
+    - App blocked (any app from apps)
+    """
+    for unit_name, unit in units.items():
+        assert unit.workload_status
+        if unit.workload_status.status == "blocked":
+            raise JujuUnitError(
+                f"{unit_name!r} workload is blocked: {unit.workload_status.info!r}"
+            )
+
+    for app_name in apps:
+        app = full_status.applications[app_name]
+        assert isinstance(app, ApplicationStatus)
+        assert app.status
+        if app.status.status == "blocked":
+            raise JujuAppError(f"{app_name!r} is blocked: {app.status.info!r}")
+
+
+def app_units(full_status: FullStatus, app_name: str) -> dict[str, UnitStatus]:
     """Fish out the app's units' status from a FullStatus response."""
     rv: dict[str, UnitStatus] = {}
     app = full_status.applications[app_name]
