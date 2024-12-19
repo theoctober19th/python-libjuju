@@ -1,6 +1,18 @@
 Changelog
 ---------
 
+3.6.1.0
+^^^^^^^
+
+Friday 20th Dec 2024
+
+## What's Changed
+* add 3.5.5 schema and update SCHEMAS.md by @james-garner-canonical in https://github.com/juju/python-libjuju/pull/1223
+* feat: larger default websockets frame size by @dimaqq in https://github.com/juju/python-libjuju/pull/1239
+* deprecate juju.jasyncio by @EdmilsonRodrigues in https://github.com/juju/python-libjuju/pull/1221
+* remove juju.loop, deprecated before 3.0 by @dimaqq in https://github.com/juju/python-libjuju/pull/1242
+* new wait for idle implementation, behind a feature flag ``JUJU_NEW_WAIT_FOR_IDLE`` in https://github.com/juju/python-libjuju/pull/1245
+
 3.6.0.0
 ^^^^^^^
 
