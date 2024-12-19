@@ -213,6 +213,28 @@ def test_unit_blocked(response: dict[str, Any], kwargs):
     assert "small problem" in str(e)
 
 
+def test_no_raise_on(response: dict[str, Any], kwargs):
+    app = response["response"]["applications"]["hexanator"]
+    app["units"]["hexanator/0"]["workload-status"]["status"] = "blocked"
+    app["units"]["hexanator/0"]["workload-status"]["info"] = "small problem"
+    app["units"]["hexanator/0"]["machine"] = "42"
+    response["response"]["machines"] = {
+        "42": {
+            "instance-status": {
+                "status": "running",
+                "info": "RUNNING",
+            },
+        },
+    }
+
+    kwargs["apps"] = ["hexanator"]
+    kwargs["raise_on_blocked"] = False
+    kwargs["raise_on_error"] = False
+
+    status = check(convert(response), **kwargs)
+    assert status  # didn't raise an exception
+
+
 def test_maintenance(response: dict[str, Any], kwargs):
     """Taken from nginx-ingress-integrator-operator integration tests."""
     app = response["response"]["applications"]["hexanator"]
