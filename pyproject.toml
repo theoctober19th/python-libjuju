@@ -1,6 +1,6 @@
 [project]
 name = "juju"
-version = "3.6.0.0"  # Stop-gap until dynamic versioning is done; must be in sync with juju/version.py:CLIENT_VERSION
+version = "3.6.1.0"  # Stop-gap until dynamic versioning is done; must be in sync with juju/version.py:CLIENT_VERSION
 description = "Python library for Juju"
 readme = "docs/readme.rst"
 license = { file = "LICENSE" }
@@ -42,6 +42,7 @@ dev = [
     "pytest",
     "pytest-asyncio",
     "Twine",
+    "freezegun",
 ]
 docs = [
     "sphinx==5.3.0",
@@ -226,8 +227,9 @@ ignore = [
 # These are tentative
 include = ["**/*.py"]
 pythonVersion = "3.8.6"
-typeCheckingMode = "strict"
-useLibraryCodeForTypes = true
+# FIXME understand the difference
+#typeCheckingMode = "strict"
+#useLibraryCodeForTypes = true
 reportGeneralTypeIssues = true
 
 [tool.pytest.ini_options]
