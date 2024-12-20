@@ -7,6 +7,7 @@ Changelog
 Friday 20th Dec 2024
 
 ## What's Changed
+
 * add 3.5.5 schema and update SCHEMAS.md by @james-garner-canonical in https://github.com/juju/python-libjuju/pull/1223
 * feat: larger default websockets frame size by @dimaqq in https://github.com/juju/python-libjuju/pull/1239
 * deprecate juju.jasyncio by @EdmilsonRodrigues in https://github.com/juju/python-libjuju/pull/1221
