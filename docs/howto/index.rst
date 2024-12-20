@@ -1,4 +1,5 @@
-**How-to guides**
+How-to guides
+#############
 
 .. toctree::
    :glob:
