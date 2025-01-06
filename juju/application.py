@@ -1,12 +1,12 @@
 # Copyright 2023 Canonical Ltd.
 # Licensed under the Apache V2, see LICENCE file for details.
+from __future__ import annotations
 
 import asyncio
 import hashlib
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional, Union
 
 from typing_extensions import deprecated
 
@@ -61,7 +61,7 @@ class Application(model.ModelEntity):
         return self.safe_data["min-units"]
 
     @property
-    def constraints(self) -> Dict[str, Union[str, int, bool]]:
+    def constraints(self) -> dict[str, str | int | bool]:
         return self.safe_data["constraints"]
 
     @property
@@ -112,7 +112,7 @@ class Application(model.ModelEntity):
         return [u for u in self.units if u.is_subordinate]
 
     @property
-    def relations(self) -> List[Relation]:
+    def relations(self) -> list[Relation]:
         return [rel for rel in self.model.relations if rel.matches(self.name)]
 
     def related_applications(self, endpoint_name=None):
@@ -579,7 +579,7 @@ class Application(model.ModelEntity):
         data = file_obj.read()
 
         headers["Content-Type"] = "application/octet-stream"
-        headers["Content-Length"] = len(data)
+        headers["Content-Length"] = str(len(data))
         data_bytes = data if isinstance(data, bytes) else bytes(data, "utf-8")
         headers["Content-Sha384"] = hashlib.sha384(data_bytes).hexdigest()
 
@@ -589,7 +589,7 @@ class Application(model.ModelEntity):
 
         headers["Content-Disposition"] = f'form-data; filename="{file_name}"'
         headers["Accept-Encoding"] = "gzip"
-        headers["Bakery-Protocol-Version"] = 3
+        headers["Bakery-Protocol-Version"] = "3"
         headers["Connection"] = "close"
 
         conn.request("PUT", url, data, headers)
@@ -638,14 +638,15 @@ class Application(model.ModelEntity):
         )
 
     @property
-    def charm_name(self):
+    def charm_name(self) -> str:
         """Get the charm name of this application
 
         :return str: The name of the charm
         """
-        return URL.parse(self.charm_url).name
+        return URL.parse(self.safe_data["charm-url"]).name
 
     @property
+    @deprecated("Application.charm_url is deprecated and will be removed in v4")
     def charm_url(self):
         """Get the charm url for this application
 
@@ -733,14 +734,14 @@ class Application(model.ModelEntity):
 
     async def refresh(
         self,
-        channel: Optional[str] = None,
+        channel: str | None = None,
         force: bool = False,
         force_series: bool = False,
         force_units: bool = False,
-        path: Optional[Union[Path, str]] = None,
-        resources: Optional[Dict[str, str]] = None,
-        revision: Optional[int] = None,
-        switch: Optional[str] = None,
+        path: Path | str | None = None,
+        resources: dict[str, str] | None = None,
+        revision: int | None = None,
+        switch: str | None = None,
     ):
         """Refresh the charm for this application.
 
@@ -841,7 +842,7 @@ class Application(model.ModelEntity):
         # need to process the given resources, as they can be
         # paths or revisions
         _arg_res_filenames = {}
-        _arg_res_revisions = {}
+        _arg_res_revisions: dict[str, str] = {}
         for res, filename_or_rev in arg_resources.items():
             if isinstance(filename_or_rev, int):
                 _arg_res_revisions[res] = filename_or_rev
@@ -849,7 +850,9 @@ class Application(model.ModelEntity):
                 _arg_res_filenames[res] = filename_or_rev
 
         # Get the existing resources from the ResourcesFacade
-        request_data = [client.Entity(self.tag)]
+        request_data: list[client.Entity | client.CharmResource] = [
+            client.Entity(self.tag)
+        ]
         resources_facade = client.ResourcesFacade.from_connection(self.connection)
         response = await resources_facade.ListResources(entities=request_data)
         existing_resources = {
@@ -930,8 +933,8 @@ class Application(model.ModelEntity):
         force: bool,
         force_series: bool,
         force_units: bool,
-        path: Union[Path, str],
-        resources: Optional[Dict[str, str]],
+        path: Path | str,
+        resources: dict[str, str] | None,
     ):
         """Refresh the charm for this application with a local charm.
 
@@ -1012,8 +1015,8 @@ class Application(model.ModelEntity):
 
 def _refresh_origin(
     current_origin: client.CharmOrigin,
-    channel: Optional[str] = None,
-    revision: Optional[int] = None,
+    channel: str | None = None,
+    revision: int | None = None,
 ) -> client.CharmOrigin:
     chan = None if channel is None else Channel.parse(channel).normalize()
 
