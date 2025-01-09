@@ -38,7 +38,7 @@ setup(
         "dev": [
             "typing-inspect",
             "pytest",
-            "pytest-asyncio",
+            "pytest-asyncio <= 0.25.0",  # https://github.com/pytest-dev/pytest-asyncio/issues/1039
             "Twine",
             "freezegun",
         ]
