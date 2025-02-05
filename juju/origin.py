@@ -63,12 +63,13 @@ class Channel:
 
     """
 
-    def __init__(self, track=None, risk=None):
+    def __init__(self, track=None, risk=None, branch=None):
         if not Risk.valid(risk):
             raise JujuError(f"unexpected risk {risk}")
 
         self.track = track or ""
         self.risk = risk
+        self.branch = branch or ""
 
     @staticmethod
     def parse(s: str):
@@ -83,6 +84,7 @@ class Channel:
 
         risk = None
         track = None
+        branch = None
         if len(p) == 1:
             if Risk.valid(p[0]):
                 risk = p[0]
@@ -92,6 +94,10 @@ class Channel:
         elif len(p) == 2:
             track = p[0]
             risk = p[1]
+        elif len(p) == 3:
+            track = p[0]
+            risk = p[1]
+            branch = p[2]
         else:
             raise JujuError(f"channel is malformed and has too many components {s}")
 
@@ -99,23 +105,28 @@ class Channel:
             raise JujuError(f"risk in channel {s} is not valid")
         if track is not None and track == "":
             raise JujuError(f"track in channel {s} is not valid")
+        if branch is not None and branch == "":
+            raise JujuError(f"branch in channel {s} is not valid")
 
-        return Channel(track, risk)
+        return Channel(track, risk, branch)
 
     def normalize(self):
         track = self.track if self.track != "" else ""
         risk = self.risk if self.risk != "" else ""
-        return Channel(track, risk)
+        branch = self.branch if self.branch != "" else ""
+        return Channel(track, risk, branch)
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
-            return self.track == other.track and self.risk == other.risk
+            return self.track == other.track and self.risk == other.risk and self.branch == other.branch
         return False
 
     def __str__(self):
         path = self.risk
         if self.track != "":
             path = f"{self.track}/{path}"
+        if self.branch != "":
+            path = f"{path}/{self.branch}"
         return path
 
     def compute_base_channel(self, series):
@@ -124,6 +135,8 @@ class Channel:
 
         """
         _ch = [self.risk]
+        if self.branch:
+            _ch.append(self.branch)
         tr = utils.get_series_version(series)
         if tr:
             _ch = [tr, *_ch]

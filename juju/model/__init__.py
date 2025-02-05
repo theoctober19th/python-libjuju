@@ -615,6 +615,7 @@ class CharmhubDeployType:
             architecture=architecture,
             risk=ch.risk,
             track=ch.track,
+            branch=ch.branch,
             base=base,
             revision=revision,
         )
