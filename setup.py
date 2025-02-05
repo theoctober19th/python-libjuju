@@ -21,7 +21,6 @@ setup(
     package_data={"juju": ["py.typed"]},
     install_requires=[
         "macaroonbakery>=1.1,<2.0",
-        "pyRFC3339>=1.0,<2.0",
         "pyyaml>=5.1.2",
         "websockets>=13.0.1",
         "paramiko>=2.4.0",
@@ -33,6 +32,7 @@ setup(
         "packaging",
         "typing-extensions>=4.5.0",
         'backports.strenum>=1.3.1; python_version < "3.11"',
+        "backports-datetime-fromisoformat>=2.0.2",
     ],
     extras_require={
         "dev": [
